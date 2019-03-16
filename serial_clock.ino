@@ -18,10 +18,13 @@
 time_t now_data;  /* 最新日時 */
 time_t disp_data; /* 最終画面描画の日時 */
 
+int day_pre;
+int hour_pre;
+
 /* 曜日変換用の文字列 */
 const char week_day[7][8] = { "(SUN)", "(MON)", "(TUE)", "(WED)", "(THU)", "(FRI)", "(SAT)" };
 
-Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
+Adafruit_TFTLCD tft( LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET );
 
 void setup() {
   Serial.begin( 115200 );
@@ -33,6 +36,7 @@ void setup() {
   tft.setRotation( 1 );
   /* フォント設定 */
   tft.setFont( &FreeSans12pt7b );
+  tft.setTextColor( GREEN );
   /* 初回表示 */
   set_display();
 }
@@ -91,22 +95,40 @@ void set_display()
   sprintf( day_data, format_day, year( now_data ), month( now_data ), day( now_data ) );
   sprintf( time_data, format_time, hour( now_data ), minute( now_data ) );
 
-  /* 背景黒・文字色緑 */
-  tft.fillScreen( BLACK );
-  tft.setTextColor( GREEN );
+  if( day_pre != day( now_data ) )
+  {
+    /* 日付が変わった場合、全て再描画 */
+    tft.fillScreen( BLACK );
+    
+    /* 曜日のデータをセット */
+    tft.setTextSize( 1 );
+    tft.setCursor( 245, 60 );
+    tft.println( week_day[weekday( now_data ) - 1] );
 
-  /* 曜日のデータをセット */
-  tft.setTextSize( 1 );
-  tft.setCursor( 245, 60 );
-  tft.println( week_day[weekday( now_data ) - 1] );
+    /* 日付のデータをセット */
+    tft.setTextSize( 2 );
+    tft.setCursor( 10, 60 );
+    tft.println( day_data );
 
-  /* 日付のデータをセット */
-  tft.setTextSize( 2 );
-  tft.setCursor( 10, 60 );
-  tft.println( day_data );
+    /* 時刻用文字サイズ指定 */
+    tft.setTextSize( 5 );
+  }
+  else if( hour_pre != hour( now_data ) )
+  {
+    /* 時間が変わった場合、時刻部分のみ再描画 */
+    tft.fillRect( 0, 100, 320, 200, BLACK );
+  }
+  else
+  {
+    /* 分単位で変わった場合、分秒のみ再描画 */
+    tft.fillRect( 170, 100, 150, 200, BLACK );
+  }
 
   /* 時刻のデータをセット */
-  tft.setTextSize( 5 );
   tft.setCursor( 10, 200 );
   tft.println( time_data );
+
+  /* 前回値更新 */
+  day_pre  = day( now_data );
+  hour_pre = hour( now_data );
 }
